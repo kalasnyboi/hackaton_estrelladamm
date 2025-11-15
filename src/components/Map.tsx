@@ -1,17 +1,26 @@
-import { useState } from 'react';
-import { MapPin, Star, Eye, EyeOff, Navigation } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { MapPin, Star, Eye, EyeOff, Navigation, MessageCircle } from 'lucide-react';
+import { User } from '../lib/supabase';
 
-export default function Map() {
+interface MapProps {
+  users: (User & { id: string })[];
+  currentUser?: (User & { id: string }) | null;
+  onMessageUser?: (user: User & { id: string }) => void;
+}
+
+export default function Map({ users, currentUser, onMessageUser }: MapProps) {
   const [isVisible, setIsVisible] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<number | null>(null);
+  const [selectedUser, setSelectedUser] = useState<string | null>(null);
 
-  const nearbyUsers = [
-    { id: 1, name: 'Lucía', age: 27, level: 'Oro', distance: '3 calles', status: 'Buscando buen rollo', lat: 41.3851, lng: 2.1734 },
-    { id: 2, name: 'Carlos', age: 29, level: 'Plata', distance: 'tu barrio', status: 'Estrella nocturna', lat: 41.3871, lng: 2.1694 },
-    { id: 3, name: 'Marina', age: 25, level: 'Oro', distance: '5 calles', status: 'Chat y risas', lat: 41.3891, lng: 2.1654 },
-    { id: 4, name: 'Javier', age: 31, level: 'Plata', distance: '2 calles', status: 'Charlemos', lat: 41.3831, lng: 2.1774 },
-    { id: 5, name: 'Paula', age: 26, level: 'Bronce', distance: '4 calles', status: 'Nueva aquí', lat: 41.3811, lng: 2.1714 }
-  ];
+  const nearbyUsers = users.filter(u =>
+    u.visible_on_map &&
+    u.id !== currentUser?.id
+  ).map((user, index) => ({
+    ...user,
+    distance: index === 0 ? '3 calles' : index === 1 ? 'tu barrio' : `${index + 2} calles`,
+    lat: 41.3851 + index * 0.002,
+    lng: 2.1734 + index * 0.002
+  }));
 
   const getLevelColor = (level: string) => {
     switch (level) {
@@ -83,7 +92,7 @@ export default function Map() {
                     >
                       <MapPin className={`w-8 h-8 ${getLevelColor(user.level)} fill-current drop-shadow-lg`} />
                       {selectedUser === user.id && (
-                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 bg-white rounded-xl shadow-2xl p-4 w-48 animate-fade-in">
+                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 bg-white rounded-xl shadow-2xl p-4 w-56 animate-fade-in">
                           <div className="flex items-center gap-2 mb-2">
                             <Star className={`w-5 h-5 ${getLevelColor(user.level)} fill-current`} />
                             <div className="text-left">
@@ -91,8 +100,22 @@ export default function Map() {
                               <p className="text-xs text-[#666666]">Nivel {user.level}</p>
                             </div>
                           </div>
-                          <p className="text-xs text-[#999999] mb-2">"{user.status}"</p>
-                          <p className="text-xs text-[#D4AF37] font-medium">📍 {user.distance}</p>
+                          {user.bio && (
+                            <p className="text-xs text-[#999999] mb-2">"{user.bio}"</p>
+                          )}
+                          <p className="text-xs text-[#D4AF37] font-medium mb-3">📍 {user.distance}</p>
+                          {onMessageUser && currentUser && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onMessageUser(user);
+                              }}
+                              className="w-full bg-gradient-to-r from-[#C8102E] to-[#D4AF37] text-white text-sm font-bold py-2 px-3 rounded-lg hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                            >
+                              <MessageCircle className="w-4 h-4" />
+                              Enviar mensaje
+                            </button>
+                          )}
                         </div>
                       )}
                     </button>
@@ -107,28 +130,50 @@ export default function Map() {
 
             <div className="space-y-4">
               <h3 className="text-2xl font-bold text-[#333333] mb-4">Cerca de ti</h3>
-              {nearbyUsers.map((user) => (
-                <button
-                  key={user.id}
-                  onClick={() => setSelectedUser(user.id)}
-                  className={`w-full bg-[#F5F5F5] hover:bg-[#FFF5F5] rounded-xl p-4 transition-all text-left ${
-                    selectedUser === user.id ? 'ring-2 ring-[#C8102E]' : ''
-                  }`}
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <p className="font-bold text-[#333333]">{user.name}, {user.age}</p>
-                      <div className="flex items-center gap-1 mt-1">
-                        <Star className={`w-4 h-4 ${getLevelColor(user.level)} fill-current`} />
-                        <span className="text-sm text-[#666666]">Nivel {user.level}</span>
+              {nearbyUsers.length === 0 ? (
+                <div className="bg-[#F5F5F5] rounded-xl p-6 text-center">
+                  <MapPin className="w-12 h-12 text-[#CCCCCC] mx-auto mb-3" />
+                  <p className="text-[#666666]">No hay usuarios visibles cerca</p>
+                </div>
+              ) : (
+                nearbyUsers.map((user) => (
+                  <div
+                    key={user.id}
+                    className={`bg-[#F5F5F5] hover:bg-[#FFF5F5] rounded-xl p-4 transition-all ${
+                      selectedUser === user.id ? 'ring-2 ring-[#C8102E]' : ''
+                    }`}
+                  >
+                    <button
+                      onClick={() => setSelectedUser(user.id)}
+                      className="w-full text-left"
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <p className="font-bold text-[#333333]">{user.name}, {user.age}</p>
+                          <div className="flex items-center gap-1 mt-1">
+                            <Star className={`w-4 h-4 ${getLevelColor(user.level)} fill-current`} />
+                            <span className="text-sm text-[#666666]">Nivel {user.level}</span>
+                          </div>
+                        </div>
+                        <MapPin className={`w-5 h-5 ${getLevelColor(user.level)}`} />
                       </div>
-                    </div>
-                    <MapPin className={`w-5 h-5 ${getLevelColor(user.level)}`} />
+                      {user.bio && (
+                        <p className="text-sm text-[#999999] mb-2">"{user.bio}"</p>
+                      )}
+                      <p className="text-xs text-[#D4AF37] font-medium">a {user.distance}</p>
+                    </button>
+                    {onMessageUser && currentUser && (
+                      <button
+                        onClick={() => onMessageUser(user)}
+                        className="w-full mt-3 bg-gradient-to-r from-[#C8102E] to-[#D4AF37] text-white text-sm font-bold py-2 px-4 rounded-lg hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                        Enviar mensaje
+                      </button>
+                    )}
                   </div>
-                  <p className="text-sm text-[#999999] mb-2">"{user.status}"</p>
-                  <p className="text-xs text-[#D4AF37] font-medium">a {user.distance}</p>
-                </button>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>

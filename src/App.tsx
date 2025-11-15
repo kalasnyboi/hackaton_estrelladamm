@@ -289,7 +289,11 @@ function App() {
           <div className="min-h-screen bg-white">
             <Header isLoggedIn={isLoggedIn} currentPage={currentPage} onNavigate={setCurrentPage} />
             <div className="pt-20">
-              <Map />
+              <Map
+                users={allUsers}
+                currentUser={userData}
+                onMessageUser={handleSelectUser}
+              />
               <Messaging />
             </div>
             <Footer />
