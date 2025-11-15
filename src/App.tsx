@@ -12,7 +12,7 @@ import Profile from './components/Profile';
 import UsersList from './components/UsersList';
 import ChatWithLimits from './components/ChatWithLimits';
 import ConversationsWithLimits from './components/ConversationsWithLimits';
-import { User, Message, getAllUsers, getConversation, sendMessage, createUser, updateUser, getUserById, getUserByEmail, getUserByAuthId, signInWithGoogle, signOut, getCurrentAuthUser, supabase } from './lib/supabase';
+import { User, Message, getAllUsers, getConversation, sendMessage, createUser, updateUser, getUserById, getUserByEmail, getUserByAuthId, signInWithGoogle, signUpWithEmail, signInWithEmail, signOut, getCurrentAuthUser, supabase } from './lib/supabase';
 
 type Page = 'home' | 'profile' | 'stars' | 'map' | 'faq' | 'messages' | 'login' | 'onboarding';
 
@@ -174,28 +174,28 @@ function App() {
     }
   };
 
-  const handleRegistration = async (name: string, age: number, gender: 'hombre' | 'mujer', email: string, bio: string) => {
+  const handleRegistration = async (name: string, age: number, gender: string, email: string, password: string, orientation?: string) => {
     try {
-      const newUser = await createUser({
+      const { userRecord } = await signUpWithEmail(email, password, {
         name,
         age,
         gender,
-        email,
-        bio,
-        stars: 0,
-        level: 'Bronce',
-        visible_on_map: false
+        orientation
       });
 
-      if (newUser && newUser.id) {
-        setUserData(newUser as User & { id: string });
+      if (userRecord && userRecord.id) {
+        setUserData(userRecord as User & { id: string });
         setIsLoggedIn(true);
-        localStorage.setItem('currentUserId', newUser.id);
+        localStorage.setItem('currentUserId', userRecord.id);
         setCurrentPage('stars');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating user:', error);
-      alert('Error al crear el usuario. Por favor, intenta de nuevo.');
+      if (error.message?.includes('already registered')) {
+        alert('Este email ya está registrado. Intenta iniciar sesión.');
+      } else {
+        alert('Error al crear el usuario. Por favor, intenta de nuevo.');
+      }
     }
   };
 
@@ -407,7 +407,7 @@ function App() {
                 onNavigate={setCurrentPage}
               />
               <div className="pt-20">
-                <Landing onRegister={handleRegistration} />
+                <Landing onRegister={handleRegistration} onGoogleRegister={handleGoogleLogin} />
               </div>
             </div>
           );

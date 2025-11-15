@@ -144,3 +144,50 @@ export const getCurrentAuthUser = async () => {
   if (error) throw error;
   return user;
 };
+
+export const signUpWithEmail = async (email: string, password: string, userData: { name: string; age: number; gender: string; orientation?: string }) => {
+  const { data: authData, error: authError } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        name: userData.name,
+        age: userData.age,
+        gender: userData.gender,
+        orientation: userData.orientation
+      }
+    }
+  });
+
+  if (authError) throw authError;
+  if (!authData.user) throw new Error('No user returned from signup');
+
+  const { data: userRecord, error: userError } = await supabase
+    .from('users')
+    .insert([{
+      auth_user_id: authData.user.id,
+      email: authData.user.email,
+      name: userData.name,
+      age: userData.age,
+      gender: userData.gender,
+      orientation: userData.orientation,
+      stars: 0,
+      level: 'Bronce',
+      visible_on_map: false
+    }])
+    .select()
+    .single();
+
+  if (userError) throw userError;
+  return { authUser: authData.user, userRecord };
+};
+
+export const signInWithEmail = async (email: string, password: string) => {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (error) throw error;
+  return data;
+};
