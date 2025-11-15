@@ -9,13 +9,13 @@ interface OnboardingProps {
 export default function Onboarding({ email, onComplete }: OnboardingProps) {
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
-  const [gender, setGender] = useState<'hombre' | 'mujer'>('hombre');
+  const [gender, setGender] = useState<'hombre' | 'mujer' | ''>('');
   const [bio, setBio] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (name && age && bio) {
-      onComplete(name, Number(age), gender, bio);
+    if (name && age && gender && bio && bio.length >= 20) {
+      onComplete(name, Number(age), gender as 'hombre' | 'mujer', bio);
     }
   };
 
@@ -87,6 +87,7 @@ export default function Onboarding({ email, onComplete }: OnboardingProps) {
                   className="w-full pl-12 pr-4 py-3 border-2 border-[#F5F5F5] rounded-xl focus:border-[#C8102E] outline-none transition-colors appearance-none bg-white"
                   required
                 >
+                  <option value="">Seleccionar</option>
                   <option value="hombre">Hombre</option>
                   <option value="mujer">Mujer</option>
                 </select>
@@ -115,7 +116,7 @@ export default function Onboarding({ email, onComplete }: OnboardingProps) {
 
             <button
               type="submit"
-              disabled={!name || !age || !bio || bio.length < 20}
+              disabled={!name || !age || !gender || !bio || bio.length < 20}
               className="w-full bg-gradient-to-r from-[#C8102E] to-[#D4AF37] text-white font-bold py-4 rounded-xl hover:shadow-xl transition-all transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             >
               Completar perfil y empezar
