@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Star, Menu, X } from 'lucide-react';
 
+type Page = 'home' | 'profile' | 'stars' | 'map' | 'faq';
+
 interface HeaderProps {
   isLoggedIn: boolean;
+  currentPage: Page;
+  onNavigate: (page: Page) => void;
 }
 
-export default function Header({ isLoggedIn }: HeaderProps) {
+export default function Header({ isLoggedIn, currentPage, onNavigate }: HeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -19,12 +23,18 @@ export default function Header({ isLoggedIn }: HeaderProps) {
   }, []);
 
   const navLinks = [
-    { href: '#como-funciona', label: 'Cómo funciona' },
-    { href: '#registro', label: 'Registro' },
-    { href: '#mis-estrellas', label: 'Mis Estrellas' },
-    { href: '#mapa', label: 'Mapa' },
-    { href: '#faq', label: 'FAQ' }
+    { page: 'home' as Page, label: 'Cómo funciona' },
+    { page: 'home' as Page, label: 'Registro' },
+    { page: 'stars' as Page, label: 'Mis Estrellas' },
+    { page: 'profile' as Page, label: 'Perfil' },
+    { page: 'map' as Page, label: 'Mapa' },
+    { page: 'faq' as Page, label: 'FAQ' }
   ];
+
+  const handleNavClick = (page: Page) => {
+    onNavigate(page);
+    setIsMobileMenuOpen(false);
+  };
 
   return (
     <header
@@ -34,23 +44,30 @@ export default function Header({ isLoggedIn }: HeaderProps) {
     >
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
-          <a href="#" className="flex items-center gap-2 group">
+          <button
+            onClick={() => onNavigate('home')}
+            className="flex items-center gap-2 group"
+          >
             <div className="relative">
               <Star className="w-8 h-8 text-[#C8102E] fill-[#C8102E] transition-transform group-hover:rotate-12" />
               <Star className="w-4 h-4 text-[#D4AF37] fill-[#D4AF37] absolute -top-1 -right-1 transition-transform group-hover:scale-110" />
             </div>
             <span className="text-xl font-bold text-[#C8102E]">Estrella Connect</span>
-          </a>
+          </button>
 
           <nav className="hidden md:flex items-center gap-8">
-            {navLinks.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                className="text-[#333333] hover:text-[#C8102E] transition-colors font-medium"
+            {navLinks.map((link, index) => (
+              <button
+                key={index}
+                onClick={() => handleNavClick(link.page)}
+                className={`transition-colors font-medium ${
+                  currentPage === link.page
+                    ? 'text-[#C8102E]'
+                    : 'text-[#333333] hover:text-[#C8102E]'
+                }`}
               >
                 {link.label}
-              </a>
+              </button>
             ))}
           </nav>
 
@@ -64,15 +81,18 @@ export default function Header({ isLoggedIn }: HeaderProps) {
 
         {isMobileMenuOpen && (
           <nav className="md:hidden mt-4 pb-4 flex flex-col gap-4">
-            {navLinks.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                className="text-[#333333] hover:text-[#C8102E] transition-colors font-medium"
-                onClick={() => setIsMobileMenuOpen(false)}
+            {navLinks.map((link, index) => (
+              <button
+                key={index}
+                onClick={() => handleNavClick(link.page)}
+                className={`text-left transition-colors font-medium ${
+                  currentPage === link.page
+                    ? 'text-[#C8102E]'
+                    : 'text-[#333333] hover:text-[#C8102E]'
+                }`}
               >
                 {link.label}
-              </a>
+              </button>
             ))}
           </nav>
         )}

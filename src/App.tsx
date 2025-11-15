@@ -13,14 +13,15 @@ import UsersList from './components/UsersList';
 import Chat from './components/Chat';
 import { User, Message, getAllUsers, getConversation, sendMessage } from './lib/supabase';
 
+type Page = 'home' | 'profile' | 'stars' | 'map' | 'faq';
+
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userData, setUserData] = useState<(User & { id: string }) | null>(null);
   const [allUsers, setAllUsers] = useState<(User & { id: string })[]>([]);
   const [selectedUser, setSelectedUser] = useState<(User & { id: string }) | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [showProfile, setShowProfile] = useState(false);
-  const [showUsersList, setShowUsersList] = useState(false);
+  const [currentPage, setCurrentPage] = useState<Page>('home');
 
   useEffect(() => {
     const smoothScroll = (e: MouseEvent) => {
@@ -114,63 +115,116 @@ function App() {
     }
   };
 
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'profile':
+        return (
+          <div className="min-h-screen bg-white">
+            <Header isLoggedIn={isLoggedIn} currentPage={currentPage} onNavigate={setCurrentPage} />
+            <div className="pt-20">
+              <section className="py-20 bg-[#F5F5F5] min-h-screen">
+                <div className="container mx-auto px-4">
+                  <div className="text-center mb-12">
+                    <h2 className="text-4xl md:text-5xl font-bold text-[#333333] mb-4">
+                      Mi Perfil
+                    </h2>
+                    <p className="text-xl text-[#666666]">
+                      Así te ven los demás cazadores de estrellas
+                    </p>
+                  </div>
+                  {userData && (
+                    <div className="max-w-4xl mx-auto">
+                      <Profile
+                        userData={userData}
+                        onPhotoUpload={handlePhotoUpload}
+                        onBioUpdate={handleBioUpdate}
+                        isEditable={true}
+                      />
+                    </div>
+                  )}
+                </div>
+              </section>
+            </div>
+            <Footer />
+          </div>
+        );
+
+      case 'stars':
+        return (
+          <div className="min-h-screen bg-white">
+            <Header isLoggedIn={isLoggedIn} currentPage={currentPage} onNavigate={setCurrentPage} />
+            <div className="pt-20">
+              {isLoggedIn && userData && (
+                <>
+                  <Dashboard userData={userData} onAddStar={handleAddStar} />
+                  <section id="usuarios" className="py-20 bg-white">
+                    <div className="container mx-auto px-4">
+                      <div className="text-center mb-12">
+                        <h2 className="text-4xl md:text-5xl font-bold text-[#333333] mb-4">
+                          Conecta con otros cazadores
+                        </h2>
+                        <p className="text-xl text-[#666666]">
+                          Envía mensajes y conoce gente con buen rollo
+                        </p>
+                      </div>
+                      <div className="max-w-4xl mx-auto">
+                        <UsersList
+                          users={allUsers}
+                          currentUserId={userData.id}
+                          onSelectUser={handleSelectUser}
+                        />
+                      </div>
+                    </div>
+                  </section>
+                </>
+              )}
+            </div>
+            <Footer />
+          </div>
+        );
+
+      case 'map':
+        return (
+          <div className="min-h-screen bg-white">
+            <Header isLoggedIn={isLoggedIn} currentPage={currentPage} onNavigate={setCurrentPage} />
+            <div className="pt-20">
+              <Map />
+              <Messaging />
+            </div>
+            <Footer />
+          </div>
+        );
+
+      case 'faq':
+        return (
+          <div className="min-h-screen bg-white">
+            <Header isLoggedIn={isLoggedIn} currentPage={currentPage} onNavigate={setCurrentPage} />
+            <div className="pt-20">
+              <FAQ />
+            </div>
+            <Footer />
+          </div>
+        );
+
+      default:
+        return (
+          <div className="min-h-screen bg-white">
+            <Header isLoggedIn={isLoggedIn} currentPage={currentPage} onNavigate={setCurrentPage} />
+            <Hero />
+            <HowItWorks />
+            <Registration onRegister={handleRegistration} isLoggedIn={isLoggedIn} />
+            {isLoggedIn && userData && (
+              <Dashboard userData={userData} onAddStar={handleAddStar} />
+            )}
+            <Footer />
+          </div>
+        );
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-white">
-      <Header isLoggedIn={isLoggedIn} />
-      <Hero />
-      <HowItWorks />
-      <Registration onRegister={handleRegistration} isLoggedIn={isLoggedIn} />
-      {isLoggedIn && userData && (
-        <>
-          <Dashboard userData={userData} onAddStar={handleAddStar} />
-
-          <section id="mi-perfil" className="py-20 bg-[#F5F5F5]">
-            <div className="container mx-auto px-4">
-              <div className="text-center mb-12">
-                <h2 className="text-4xl md:text-5xl font-bold text-[#333333] mb-4">
-                  Mi Perfil
-                </h2>
-                <p className="text-xl text-[#666666]">
-                  Así te ven los demás cazadores de estrellas
-                </p>
-              </div>
-              <div className="max-w-4xl mx-auto">
-                <Profile
-                  userData={userData}
-                  onPhotoUpload={handlePhotoUpload}
-                  onBioUpdate={handleBioUpdate}
-                  isEditable={true}
-                />
-              </div>
-            </div>
-          </section>
-
-          <section id="usuarios" className="py-20 bg-white">
-            <div className="container mx-auto px-4">
-              <div className="text-center mb-12">
-                <h2 className="text-4xl md:text-5xl font-bold text-[#333333] mb-4">
-                  Conecta con otros cazadores
-                </h2>
-                <p className="text-xl text-[#666666]">
-                  Envía mensajes y conoce gente con buen rollo
-                </p>
-              </div>
-              <div className="max-w-4xl mx-auto">
-                <UsersList
-                  users={allUsers}
-                  currentUserId={userData.id}
-                  onSelectUser={handleSelectUser}
-                />
-              </div>
-            </div>
-          </section>
-        </>
-      )}
-      <Map />
-      <Messaging />
-      <FAQ />
-      <Footer />
-
+    <>
+      {renderPage()}
       {selectedUser && userData && (
         <Chat
           currentUser={userData}
@@ -180,7 +234,7 @@ function App() {
           onBack={() => setSelectedUser(null)}
         />
       )}
-    </div>
+    </>
   );
 }
 
