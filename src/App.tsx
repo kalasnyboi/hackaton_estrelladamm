@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Header from './components/Header';
 import Landing from './components/Landing';
 import Login from './components/Login';
+import Onboarding from './components/Onboarding';
 import Dashboard from './components/Dashboard';
 import Map from './components/Map';
 import Messaging from './components/Messaging';
@@ -11,13 +12,14 @@ import Profile from './components/Profile';
 import UsersList from './components/UsersList';
 import ChatWithLimits from './components/ChatWithLimits';
 import ConversationsWithLimits from './components/ConversationsWithLimits';
-import { User, Message, getAllUsers, getConversation, sendMessage, createUser, updateUser, getUserById, getUserByEmail, supabase } from './lib/supabase';
+import { User, Message, getAllUsers, getConversation, sendMessage, createUser, updateUser, getUserById, getUserByEmail, getUserByAuthId, signInWithGoogle, signOut, getCurrentAuthUser, supabase } from './lib/supabase';
 
-type Page = 'home' | 'profile' | 'stars' | 'map' | 'faq' | 'messages' | 'login';
+type Page = 'home' | 'profile' | 'stars' | 'map' | 'faq' | 'messages' | 'login' | 'onboarding';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userData, setUserData] = useState<(User & { id: string }) | null>(null);
+  const [pendingAuthEmail, setPendingAuthEmail] = useState<string>('');
   const [allUsers, setAllUsers] = useState<(User & { id: string })[]>([]);
   const [selectedUser, setSelectedUser] = useState<(User & { id: string }) | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -27,23 +29,78 @@ function App() {
 
   useEffect(() => {
     const loadUser = async () => {
-      const savedUserId = localStorage.getItem('currentUserId');
-      if (savedUserId) {
-        try {
-          const user = await getUserById(savedUserId);
+      try {
+        const authUser = await getCurrentAuthUser();
+
+        if (authUser) {
+          const user = await getUserByAuthId(authUser.id);
+
           if (user && user.id) {
+            if (!user.name || !user.age || !user.gender) {
+              setPendingAuthEmail(authUser.email || '');
+              setCurrentPage('onboarding');
+              setIsLoading(false);
+              return;
+            }
+
             setUserData(user as User & { id: string });
             setIsLoggedIn(true);
+            localStorage.setItem('currentUserId', user.id);
+          } else {
+            const newUser = await createUser({
+              auth_user_id: authUser.id,
+              email: authUser.email || '',
+              stars: 0,
+              level: 'Bronce',
+              visible_on_map: false
+            });
+
+            if (newUser && newUser.id) {
+              setPendingAuthEmail(authUser.email || '');
+              setCurrentPage('onboarding');
+            }
           }
-        } catch (error) {
-          console.error('Error loading user:', error);
-          localStorage.removeItem('currentUserId');
+        } else {
+          const savedUserId = localStorage.getItem('currentUserId');
+          if (savedUserId) {
+            const user = await getUserById(savedUserId);
+            if (user && user.id) {
+              setUserData(user as User & { id: string });
+              setIsLoggedIn(true);
+            } else {
+              localStorage.removeItem('currentUserId');
+            }
+          }
         }
+      } catch (error) {
+        console.error('Error loading user:', error);
       }
+
       setIsLoading(false);
     };
 
     loadUser();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        const user = await getUserByAuthId(session.user.id);
+        if (user && user.id) {
+          if (!user.name || !user.age || !user.gender) {
+            setPendingAuthEmail(session.user.email || '');
+            setCurrentPage('onboarding');
+          } else {
+            setUserData(user as User & { id: string });
+            setIsLoggedIn(true);
+            localStorage.setItem('currentUserId', user.id);
+            setCurrentPage('stars');
+          }
+        }
+      }
+    });
+
+    return () => {
+      authListener?.subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -159,14 +216,59 @@ function App() {
     }
   };
 
-  const handleLogout = () => {
-    setUserData(null);
-    setIsLoggedIn(false);
-    setSelectedUser(null);
-    setMessages([]);
-    setAllMessages([]);
-    localStorage.removeItem('currentUserId');
-    setCurrentPage('home');
+  const handleGoogleLogin = async () => {
+    try {
+      await signInWithGoogle();
+    } catch (error) {
+      console.error('Error with Google login:', error);
+      alert('Error al iniciar sesión con Google. Por favor, intenta de nuevo.');
+    }
+  };
+
+  const handleOnboardingComplete = async (name: string, age: number, gender: 'hombre' | 'mujer', bio: string) => {
+    try {
+      const authUser = await getCurrentAuthUser();
+      if (!authUser) {
+        alert('Error: No se encontró la sesión de autenticación.');
+        return;
+      }
+
+      const user = await getUserByAuthId(authUser.id);
+      if (user && user.id) {
+        const updatedUser = await updateUser(user.id, {
+          name,
+          age,
+          gender,
+          bio
+        });
+
+        if (updatedUser && updatedUser.id) {
+          setUserData(updatedUser as User & { id: string });
+          setIsLoggedIn(true);
+          localStorage.setItem('currentUserId', updatedUser.id);
+          setCurrentPage('stars');
+        }
+      }
+    } catch (error) {
+      console.error('Error completing onboarding:', error);
+      alert('Error al completar el perfil. Por favor, intenta de nuevo.');
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      setUserData(null);
+      setIsLoggedIn(false);
+      setSelectedUser(null);
+      setMessages([]);
+      setAllMessages([]);
+      setPendingAuthEmail('');
+      localStorage.removeItem('currentUserId');
+      setCurrentPage('home');
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
   };
 
   const handleAddStar = async () => {
@@ -251,6 +353,17 @@ function App() {
   };
 
   const renderPage = () => {
+    if (currentPage === 'onboarding' && pendingAuthEmail) {
+      return (
+        <div className="min-h-screen bg-white">
+          <Onboarding
+            email={pendingAuthEmail}
+            onComplete={handleOnboardingComplete}
+          />
+        </div>
+      );
+    }
+
     if (!isLoggedIn) {
       switch (currentPage) {
         case 'login':
@@ -263,6 +376,7 @@ function App() {
               />
               <Login
                 onLogin={handleLogin}
+                onGoogleLogin={handleGoogleLogin}
                 onSwitchToRegister={() => setCurrentPage('home')}
               />
             </div>
