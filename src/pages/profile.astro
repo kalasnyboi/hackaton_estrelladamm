@@ -1,0 +1,19 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Mi Perfil - Single Damm">
+  <div id="profile-app"></div>
+
+  <script>
+    import { createRoot } from 'react-dom/client';
+    import { createElement } from 'react';
+    import ProfilePage from '../components/ProfilePage';
+
+    const container = document.getElementById('profile-app');
+    if (container) {
+      const root = createRoot(container);
+      root.render(createElement(ProfilePage));
+    }
+  </script>
+</Layout>

@@ -142,7 +142,7 @@ export default function Profile({ userData, onPhotoUpload, onBioUpdate, isEditab
             <div>
               <p className="text-sm text-[#666666] font-medium mb-2">Sobre mí</p>
               <p className="text-[#333333] leading-relaxed">
-                {bio || 'Aún no hay bio. ¡Cuéntale a otros cazadores de estrellas quién eres!'}
+                {bio || 'Aún no hay bio. ¡Cuéntale a la comunidad quién eres!'}
               </p>
             </div>
           )}
