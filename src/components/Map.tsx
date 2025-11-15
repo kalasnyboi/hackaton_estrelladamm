@@ -1,21 +1,29 @@
 import { useState, useEffect } from 'react';
-import { MapPin, Star, Eye, EyeOff, Navigation, MessageCircle } from 'lucide-react';
+import { MapPin, Star, Eye, EyeOff, Navigation, MessageCircle, Beer, Filter } from 'lucide-react';
 import { User } from '../lib/supabase';
 
 interface MapProps {
   users: (User & { id: string })[];
   currentUser?: (User & { id: string }) | null;
   onMessageUser?: (user: User & { id: string }) => void;
+  onSendBeer?: (userId: string) => void;
 }
 
-export default function Map({ users, currentUser, onMessageUser }: MapProps) {
+export default function Map({ users, currentUser, onMessageUser, onSendBeer }: MapProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
+  const [ageRange, setAgeRange] = useState<[number, number]>([18, 99]);
+  const [genderFilter, setGenderFilter] = useState<'todos' | 'hombre' | 'mujer'>('todos');
+  const [showFilters, setShowFilters] = useState(false);
 
-  const nearbyUsers = users.filter(u =>
-    u.visible_on_map &&
-    u.id !== currentUser?.id
-  ).map((user, index) => ({
+  const filteredUsers = users.filter(u => {
+    if (!u.visible_on_map || u.id === currentUser?.id) return false;
+    if (u.age < ageRange[0] || u.age > ageRange[1]) return false;
+    if (genderFilter !== 'todos' && u.gender !== genderFilter) return false;
+    return true;
+  });
+
+  const nearbyUsers = filteredUsers.map((user, index) => ({
     ...user,
     distance: index === 0 ? '3 calles' : index === 1 ? 'tu barrio' : `${index + 2} calles`,
     lat: 41.3851 + index * 0.002,
@@ -33,7 +41,7 @@ export default function Map({ users, currentUser, onMessageUser }: MapProps) {
   return (
     <section id="mapa" className="py-20 bg-white">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-12">
+        <div className="text-center mb-8">
           <h2 className="text-4xl md:text-5xl font-bold text-[#333333] mb-4">
             ¿Quién brilla por tu zona?
           </h2>
@@ -41,27 +49,128 @@ export default function Map({ users, currentUser, onMessageUser }: MapProps) {
             Otros cazadores de estrellas en tu área (solo si quieren ser vistos)
           </p>
 
-          <div className="inline-flex items-center gap-4 bg-[#F5F5F5] rounded-full px-6 py-3">
-            <span className="text-sm font-medium text-[#333333]">Aparecer en el mapa</span>
-            <button
-              onClick={() => setIsVisible(!isVisible)}
-              className={`relative w-14 h-7 rounded-full transition-colors ${
-                isVisible ? 'bg-[#C8102E]' : 'bg-[#CCCCCC]'
-              }`}
-            >
-              <div
-                className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-transform ${
-                  isVisible ? 'translate-x-7' : ''
+          <div className="flex flex-col md:flex-row items-center justify-center gap-4 mb-6">
+            <div className="inline-flex items-center gap-4 bg-[#F5F5F5] rounded-full px-6 py-3">
+              <span className="text-sm font-medium text-[#333333]">Aparecer en el mapa</span>
+              <button
+                onClick={() => setIsVisible(!isVisible)}
+                className={`relative w-14 h-7 rounded-full transition-colors ${
+                  isVisible ? 'bg-[#C8102E]' : 'bg-[#CCCCCC]'
                 }`}
               >
-                {isVisible ? (
-                  <Eye className="w-3 h-3 text-[#C8102E] absolute top-1 left-1" />
-                ) : (
-                  <EyeOff className="w-3 h-3 text-[#999999] absolute top-1 left-1" />
-                )}
-              </div>
+                <div
+                  className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-transform ${
+                    isVisible ? 'translate-x-7' : ''
+                  }`}
+                >
+                  {isVisible ? (
+                    <Eye className="w-3 h-3 text-[#C8102E] absolute top-1 left-1" />
+                  ) : (
+                    <EyeOff className="w-3 h-3 text-[#999999] absolute top-1 left-1" />
+                  )}
+                </div>
+              </button>
+            </div>
+
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="inline-flex items-center gap-2 bg-[#F5F5F5] hover:bg-[#E5E5E5] rounded-full px-6 py-3 transition-colors"
+            >
+              <Filter className="w-4 h-4 text-[#C8102E]" />
+              <span className="text-sm font-medium text-[#333333]">Filtros</span>
             </button>
           </div>
+
+          {showFilters && (
+            <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-lg p-6 mb-6 animate-fade-in">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-bold text-[#333333] mb-3">Edad</label>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="number"
+                        value={ageRange[0]}
+                        onChange={(e) => setAgeRange([Number(e.target.value), ageRange[1]])}
+                        min="18"
+                        max="99"
+                        className="w-20 px-3 py-2 border-2 border-[#F5F5F5] rounded-lg focus:border-[#C8102E] outline-none"
+                      />
+                      <span className="text-[#666666]">a</span>
+                      <input
+                        type="number"
+                        value={ageRange[1]}
+                        onChange={(e) => setAgeRange([ageRange[0], Number(e.target.value)])}
+                        min="18"
+                        max="99"
+                        className="w-20 px-3 py-2 border-2 border-[#F5F5F5] rounded-lg focus:border-[#C8102E] outline-none"
+                      />
+                      <span className="text-[#666666]">años</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="18"
+                      max="99"
+                      value={ageRange[0]}
+                      onChange={(e) => setAgeRange([Number(e.target.value), ageRange[1]])}
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-[#333333] mb-3">Sexo</label>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setGenderFilter('todos')}
+                      className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${
+                        genderFilter === 'todos'
+                          ? 'bg-gradient-to-r from-[#C8102E] to-[#D4AF37] text-white'
+                          : 'bg-[#F5F5F5] text-[#666666] hover:bg-[#E5E5E5]'
+                      }`}
+                    >
+                      Todos
+                    </button>
+                    <button
+                      onClick={() => setGenderFilter('hombre')}
+                      className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${
+                        genderFilter === 'hombre'
+                          ? 'bg-gradient-to-r from-[#C8102E] to-[#D4AF37] text-white'
+                          : 'bg-[#F5F5F5] text-[#666666] hover:bg-[#E5E5E5]'
+                      }`}
+                    >
+                      Hombres
+                    </button>
+                    <button
+                      onClick={() => setGenderFilter('mujer')}
+                      className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${
+                        genderFilter === 'mujer'
+                          ? 'bg-gradient-to-r from-[#C8102E] to-[#D4AF37] text-white'
+                          : 'bg-[#F5F5F5] text-[#666666] hover:bg-[#E5E5E5]'
+                      }`}
+                    >
+                      Mujeres
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-[#F5F5F5] flex justify-between items-center">
+                <p className="text-sm text-[#666666]">
+                  Mostrando <span className="font-bold text-[#C8102E]">{nearbyUsers.length}</span> usuario{nearbyUsers.length !== 1 ? 's' : ''}
+                </p>
+                <button
+                  onClick={() => {
+                    setAgeRange([18, 99]);
+                    setGenderFilter('todos');
+                  }}
+                  className="text-sm text-[#C8102E] hover:text-[#D4AF37] font-medium"
+                >
+                  Limpiar filtros
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="max-w-6xl mx-auto">
@@ -104,17 +213,33 @@ export default function Map({ users, currentUser, onMessageUser }: MapProps) {
                             <p className="text-xs text-[#999999] mb-2">"{user.bio}"</p>
                           )}
                           <p className="text-xs text-[#D4AF37] font-medium mb-3">📍 {user.distance}</p>
-                          {onMessageUser && currentUser && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onMessageUser(user);
-                              }}
-                              className="w-full bg-gradient-to-r from-[#C8102E] to-[#D4AF37] text-white text-sm font-bold py-2 px-3 rounded-lg hover:shadow-lg transition-all flex items-center justify-center gap-2"
-                            >
-                              <MessageCircle className="w-4 h-4" />
-                              Enviar mensaje
-                            </button>
+                          {currentUser && (
+                            <div className="space-y-2">
+                              {onMessageUser && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onMessageUser(user);
+                                  }}
+                                  className="w-full bg-gradient-to-r from-[#C8102E] to-[#D4AF37] text-white text-sm font-bold py-2 px-3 rounded-lg hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                                >
+                                  <MessageCircle className="w-4 h-4" />
+                                  Enviar mensaje
+                                </button>
+                              )}
+                              {onSendBeer && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onSendBeer(user.id);
+                                  }}
+                                  className="w-full bg-[#FFA500] text-white text-sm font-bold py-2 px-3 rounded-lg hover:bg-[#FF8C00] transition-all flex items-center justify-center gap-2"
+                                >
+                                  <Beer className="w-4 h-4" />
+                                  Invitar cerveza
+                                </button>
+                              )}
+                            </div>
                           )}
                         </div>
                       )}
@@ -162,14 +287,27 @@ export default function Map({ users, currentUser, onMessageUser }: MapProps) {
                       )}
                       <p className="text-xs text-[#D4AF37] font-medium">a {user.distance}</p>
                     </button>
-                    {onMessageUser && currentUser && (
-                      <button
-                        onClick={() => onMessageUser(user)}
-                        className="w-full mt-3 bg-gradient-to-r from-[#C8102E] to-[#D4AF37] text-white text-sm font-bold py-2 px-4 rounded-lg hover:shadow-lg transition-all flex items-center justify-center gap-2"
-                      >
-                        <MessageCircle className="w-4 h-4" />
-                        Enviar mensaje
-                      </button>
+                    {currentUser && (
+                      <div className="mt-3 space-y-2">
+                        {onMessageUser && (
+                          <button
+                            onClick={() => onMessageUser(user)}
+                            className="w-full bg-gradient-to-r from-[#C8102E] to-[#D4AF37] text-white text-sm font-bold py-2 px-4 rounded-lg hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                          >
+                            <MessageCircle className="w-4 h-4" />
+                            Enviar mensaje
+                          </button>
+                        )}
+                        {onSendBeer && (
+                          <button
+                            onClick={() => onSendBeer(user.id)}
+                            className="w-full bg-[#FFA500] text-white text-sm font-bold py-2 px-4 rounded-lg hover:bg-[#FF8C00] transition-all flex items-center justify-center gap-2"
+                          >
+                            <Beer className="w-4 h-4" />
+                            Invitar cerveza
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
                 ))

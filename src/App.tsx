@@ -12,7 +12,7 @@ import Profile from './components/Profile';
 import UsersList from './components/UsersList';
 import ChatWithLimits from './components/ChatWithLimits';
 import ConversationsWithLimits from './components/ConversationsWithLimits';
-import { User, Message, getAllUsers, getConversation, sendMessage, createUser, updateUser, getUserById } from './lib/supabase';
+import { User, Message, getAllUsers, getConversation, sendMessage, createUser, updateUser, getUserById, supabase } from './lib/supabase';
 
 type Page = 'home' | 'profile' | 'stars' | 'map' | 'faq' | 'messages';
 
@@ -202,6 +202,26 @@ function App() {
     }
   };
 
+  const handleSendBeer = async (recipientId: string) => {
+    if (!userData) return;
+
+    try {
+      const { error } = await supabase
+        .from('beers_sent')
+        .insert({
+          sender_id: userData.id,
+          recipient_id: recipientId
+        });
+
+      if (error) throw error;
+
+      alert('🍺 ¡Cerveza enviada! El usuario recibirá una notificación.');
+    } catch (error) {
+      console.error('Error sending beer:', error);
+      alert('Error al enviar la cerveza. Inténtalo de nuevo.');
+    }
+  };
+
   const renderPage = () => {
     switch (currentPage) {
       case 'messages':
@@ -293,6 +313,7 @@ function App() {
                 users={allUsers}
                 currentUser={userData}
                 onMessageUser={handleSelectUser}
+                onSendBeer={handleSendBeer}
               />
               <Messaging />
             </div>
