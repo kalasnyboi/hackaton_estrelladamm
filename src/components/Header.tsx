@@ -39,7 +39,7 @@ export default function Header({ isLoggedIn }: HeaderProps) {
               <Star className="w-8 h-8 text-[#C8102E] fill-[#C8102E] transition-transform group-hover:rotate-12" />
               <Star className="w-4 h-4 text-[#D4AF37] fill-[#D4AF37] absolute -top-1 -right-1 transition-transform group-hover:scale-110" />
             </div>
-            <span className="text-xl font-bold text-[#C8102E]">Single Damm</span>
+            <span className="text-xl font-bold text-[#C8102E]">Estrella Connect</span>
           </a>
 
           <nav className="hidden md:flex items-center gap-8">

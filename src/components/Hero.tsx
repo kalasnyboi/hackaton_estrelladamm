@@ -7,12 +7,12 @@ export default function Hero() {
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div className="space-y-6 animate-fade-in">
             <h1 className="text-5xl md:text-6xl font-bold text-[#333333] leading-tight">
-              Conecta con{' '}
-              <span className="text-[#C8102E]">gente increíble</span>.{' '}
-              <span className="block mt-2">Vive Damm.</span>
+              Conoce a tus{' '}
+              <span className="text-[#C8102E]">estrellas</span>.{' '}
+              <span className="block mt-2">Las humanas.</span>
             </h1>
             <p className="text-xl text-[#666666] leading-relaxed">
-              Escanea tu Damm, únete a la comunidad, conoce personas con buen rollo
+              Escanea tu birra, entra al juego, descubre quién brilla cerca
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <a

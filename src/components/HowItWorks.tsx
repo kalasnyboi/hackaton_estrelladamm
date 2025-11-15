@@ -32,7 +32,7 @@ export default function HowItWorks() {
             Cómo funciona
           </h2>
           <p className="text-xl text-[#666666]">
-            Acumula puntos Damm, desbloquea conversaciones, conoce gente increíble
+            Colecciona estrellas, desbloquea conversaciones, conoce quién brilla cerca
           </p>
         </div>
 

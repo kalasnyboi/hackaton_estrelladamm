@@ -29,7 +29,7 @@ export default function Map() {
             ¿Quién brilla por tu zona?
           </h2>
           <p className="text-xl text-[#666666] mb-6">
-            Otras personas en tu área (solo si quieren ser vistos)
+            Otros cazadores de estrellas en tu área (solo si quieren ser vistos)
           </p>
 
           <div className="inline-flex items-center gap-4 bg-[#F5F5F5] rounded-full px-6 py-3">
