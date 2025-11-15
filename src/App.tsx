@@ -32,22 +32,31 @@ function App() {
     const loadUser = async () => {
       try {
         const authUser = await getCurrentAuthUser();
+        console.log('Auth user:', authUser ? 'exists' : 'not found');
 
         if (authUser) {
           const user = await getUserByAuthId(authUser.id);
+          console.log('User from DB:', user ? 'found' : 'not found');
 
           if (user && user.id) {
+            console.log('User profile:', { name: user.name, age: user.age, gender: user.gender });
+
             if (!user.name || !user.age || !user.gender) {
+              console.log('Profile incomplete, redirecting to onboarding');
               setPendingAuthEmail(authUser.email || '');
               setCurrentPage('onboarding');
               setIsLoading(false);
               return;
             }
 
+            console.log('Profile complete, logging in');
             setUserData(user as User & { id: string });
             setIsLoggedIn(true);
             localStorage.setItem('currentUserId', user.id);
+            setIsLoading(false);
+            return;
           } else {
+            console.log('Creating new user');
             const newUser = await createUser({
               auth_user_id: authUser.id,
               email: authUser.email || '',
@@ -57,6 +66,7 @@ function App() {
             });
 
             if (newUser && newUser.id) {
+              console.log('New user created, redirecting to onboarding');
               setPendingAuthEmail(authUser.email || '');
               setCurrentPage('onboarding');
               setIsLoading(false);
@@ -64,6 +74,7 @@ function App() {
             }
           }
         } else {
+          console.log('No auth user, checking localStorage');
           const savedUserId = localStorage.getItem('currentUserId');
           if (savedUserId) {
             const user = await getUserById(savedUserId);
